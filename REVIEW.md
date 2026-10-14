@@ -2,7 +2,7 @@
 
 ## Verifiable project context
 
-Pulso is moving from planning into implementation. The reviewed branch introduces a React/Vite frontend, a NestJS API connected to PostgreSQL through TypeORM, environment validation, Vitest tests, and a quality workflow. The complete target architecture and business requirements live in the [project Wiki](https://github.com/Fernanda-Escobar-Fullstack/pulso/wiki). Treat only code that exists and can be verified in the reviewed branch as implemented.
+Pulso is moving from planning into implementation. The complete target architecture and business requirements live in the [project Wiki](https://github.com/Fernanda-Escobar-Fullstack/pulso/wiki). Treat only code that exists and can be verified in the reviewed branch as implemented.
 
 Pulso is a web application for small food businesses. The planned system is a TypeScript monorepository with React and Vite, a layered NestJS backend, REST, PostgreSQL and TypeORM, JWT and Google OAuth, Gemini accessed only through the backend, and the Web Speech API in the browser.
 
