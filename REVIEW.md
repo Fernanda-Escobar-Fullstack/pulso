@@ -1,10 +1,10 @@
-# Instrucciones de revisión para GitHub Copilot
+# Instrucciones de revisión para Kilo Code
 
 ## Contexto verificable del proyecto
 
-Pulso está en fase de planificación. Al 14 de octubre de 2026, el repositorio solo contiene `README.md`; la arquitectura objetivo se documenta en la [Wiki](https://github.com/Fernanda-Escobar-Fullstack/pulso/wiki) y en `docs/architecture.md`. No presentes tecnologías planificadas como implementadas ni inventes versiones, comandos, módulos o garantías que el diff y el repositorio no demuestren.
+Pulso está pasando de planificación a implementación. La arquitectura objetivo se documenta en la [Wiki](https://github.com/Fernanda-Escobar-Fullstack/pulso/wiki) y en `docs/architecture.md`. No presentes tecnologías planificadas como implementadas ni inventes versiones, comandos, módulos o garantías que el diff y la rama revisada no demuestren.
 
-El objetivo es una aplicación web para pequeños negocios de alimentos. El diseño previsto es un monorepositorio TypeScript con frontend React + Vite, backend NestJS por capas, REST, PostgreSQL/TypeORM, JWT y Google OAuth, Gemini mediante el backend y Web Speech API en el navegador. Todo ello sigue siendo arquitectura objetivo hasta que exista código verificable.
+El objetivo es una aplicación web para pequeños negocios de alimentos. El diseño previsto es un monorepositorio TypeScript con frontend React + Vite, backend NestJS por capas, REST, PostgreSQL/TypeORM, JWT y Google OAuth, Gemini mediante el backend y Web Speech API en el navegador. Considera implementado únicamente lo que exista y pueda verificarse en la rama revisada.
 
 ## Comportamiento obligatorio del revisor
 
@@ -167,4 +167,4 @@ Incluye archivo y línea del diff siempre que GitHub los permita. Si no hay hall
 
 Cuando existan scripts reales, recomienda checks obligatorios de lint, type-check, pruebas, build y migraciones para frontend y backend. Añade escaneo de secretos, dependencias y análisis estático solo mediante herramientas adoptadas y configuradas por el proyecto. La protección de `main` debe exigir los checks pertinentes y revisión humana.
 
-Copilot Code Review produce observaciones; no sustituye tests, validación del servidor, análisis automático, revisión humana ni reglas de protección de rama, y no debe afirmarse que bloquea un merge por sí solo.
+Kilo Code Review produce observaciones; no sustituye tests, validación del servidor, análisis automático, revisión humana ni reglas de protección de rama, y no debe afirmarse que bloquea un merge por sí solo.
