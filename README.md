@@ -51,5 +51,4 @@ GitHub Actions executes the same checks for pull requests and changes to `main`.
 
 ## Documentation
 
-- [Architecture](docs/architecture.md)
 - [Project Wiki](https://github.com/Fernanda-Escobar-Fullstack/pulso/wiki)
