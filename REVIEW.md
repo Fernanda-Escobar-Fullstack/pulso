@@ -1,170 +1,146 @@
-# Instrucciones de revisión para Kilo Code
+# Kilo Code review instructions
 
-## Contexto verificable del proyecto
+## Verifiable project context
 
-Pulso está pasando de planificación a implementación. La arquitectura objetivo se documenta en la [Wiki](https://github.com/Fernanda-Escobar-Fullstack/pulso/wiki) y en `docs/architecture.md`. No presentes tecnologías planificadas como implementadas ni inventes versiones, comandos, módulos o garantías que el diff y la rama revisada no demuestren.
+Pulso is moving from planning into implementation. The complete target architecture and business requirements live in the [project Wiki](https://github.com/Fernanda-Escobar-Fullstack/pulso/wiki). Treat only code that exists and can be verified in the reviewed branch as implemented.
 
-El objetivo es una aplicación web para pequeños negocios de alimentos. El diseño previsto es un monorepositorio TypeScript con frontend React + Vite, backend NestJS por capas, REST, PostgreSQL/TypeORM, JWT y Google OAuth, Gemini mediante el backend y Web Speech API en el navegador. Considera implementado únicamente lo que exista y pueda verificarse en la rama revisada.
+Pulso is a web application for small food businesses. The planned system is a TypeScript monorepository with React and Vite, a layered NestJS backend, REST, PostgreSQL and TypeORM, JWT and Google OAuth, Gemini accessed only through the backend, and the Web Speech API in the browser.
 
-## Comportamiento obligatorio del revisor
+## Required reviewer behavior
 
-- Responde siempre en español.
-- Revisa el diff en contexto y reporta únicamente problemas introducidos o agravados por el cambio.
-- Prioriza seguridad, aislamiento entre negocios, integridad de dinero e inventario, autorización, transacciones y regresiones funcionales.
-- Comprueba cada hallazgo contra el código, pruebas, configuración, `docs/architecture.md` y la Wiki. Si falta evidencia, formula una pregunta o no reportes el hallazgo.
-- No afirmes que lint, pruebas, build, migraciones o despliegue pasan si no se ejecutaron y no existe resultado verificable.
-- No exijas una tecnología, versión o abstracción que el proyecto no haya adoptado.
-- No conviertas preferencias cosméticas en hallazgos. No solicites refactors sin un riesgo concreto.
-- Agrupa duplicados por causa raíz. Evita falsos positivos e hipótesis sin una ruta de fallo demostrable.
-- Señala contradicciones entre código y documentación, pero distingue un defecto ejecutable de una decisión aún pendiente.
+- Write every review in English.
+- Review the diff in context and report only problems introduced or worsened by the change.
+- Prioritize security, tenant isolation, financial and inventory integrity, authorization, transactions, and functional regressions.
+- Verify every finding against the code, tests, configuration, and Wiki. Ask a question or omit the finding when evidence is missing.
+- Never claim that lint, tests, builds, migrations, or deployments pass without verifiable execution results.
+- Do not require technologies, versions, or abstractions that the project has not adopted.
+- Do not report cosmetic preferences as defects or request refactors without a concrete risk.
+- Group duplicates by root cause and avoid hypothetical findings without a demonstrable failure path.
 
-## Prioridad 1: seguridad y aislamiento
+## Priority 1: security and tenant isolation
 
-### Autenticación y autorización
+### Authentication and authorization
 
-- Toda ruta protegida debe autenticar en el backend y aplicar autorización por rol; ocultar botones en React no concede ni revoca permisos.
-- `Administrator` y `Employee` no son equivalentes. Comprueba especialmente gestión de empleados, costos de referencia, salarios, costos, utilidades y resultados financieros.
-- Verifica estado activo del usuario y expiración/validez del JWT cuando esos mecanismos existan.
-- En Google OAuth, Google prueba identidad; Pulso todavía debe resolver usuario, negocio, rol y estado. Nunca aceptes rol o `businessId` desde el cliente o desde claims no verificados.
-- AI y voz deben usar exactamente los mismos controles que una operación iniciada desde un formulario.
+- Every protected route must authenticate and authorize in the backend. Hiding controls in React is not authorization.
+- `Administrator` and `Employee` are different roles. Pay special attention to employee management, reference costs, salaries, expenses, profits, and financial results.
+- Verify active-user state and JWT validity and expiration when those mechanisms exist.
+- Google OAuth proves identity only. Pulso must still resolve the user, business, role, and status. Never trust `role` or `businessId` from the client or from unverified claims.
+- AI- and voice-initiated operations must use the same controls as form-initiated operations.
 
-### Aislamiento por negocio
+### Business isolation
 
-- Todo registro operativo pertenece a un negocio. El `businessId` autorizado se obtiene de la identidad autenticada, nunca de parámetros, body, query o headers controlados por el cliente.
-- Toda lectura y mutación por UUID debe incluir el alcance del negocio. Verifica también relaciones, agregados, conteos, búsquedas, exports, alertas y mensajes de error.
-- Detecta IDOR: cargar primero por ID y comprobar el negocio después puede filtrar existencia o permitir cambios. Prefiere una consulta ya limitada por `id` y `businessId`.
-- En creación y asociación de registros, confirma que todas las entidades relacionadas pertenecen al mismo negocio.
-- Las pruebas de autorización importantes deben usar al menos dos negocios y cubrir lectura y escritura cruzadas.
+- Every operational record belongs to a business. Derive the authorized `businessId` from the authenticated identity, never from client-controlled parameters, bodies, queries, or headers.
+- Scope every read and mutation by both resource ID and business. Include relationships, aggregates, counts, searches, exports, alerts, and error responses.
+- Detect IDOR risks. Prefer queries constrained by `id` and `businessId` instead of loading by ID and checking ownership afterward.
+- When creating relationships, verify that every related entity belongs to the same business.
+- Important authorization tests must use at least two businesses and cover cross-business reads and writes.
 
-### Entrada, secretos y exposición
+### Input, secrets, and exposure
 
-- DTOs y validación del servidor deben comprobar tipos, UUID, enum, fechas, unidades, cantidades y dinero, rechazar campos inesperados y no confiar en validación del frontend.
-- Reporta SQL construido con entrada no confiable, consultas sin parametrizar o uso inseguro de operadores dinámicos.
-- Contraseñas deben almacenarse con bcrypt; nunca deben aparecer contraseñas, hashes, JWT, tokens de Google, cabeceras de autorización, `DATABASE_URL`, `JWT_SECRET`, `GOOGLE_CLIENT_SECRET` ni `GEMINI_API_KEY` en código, bundle, respuesta o log.
-- Una variable `VITE_*` es pública. Reporta cualquier secreto expuesto con ese prefijo o incorporado al frontend.
-- CORS solo limita orígenes del navegador; nunca lo aceptes como sustituto de autenticación o autorización.
-- Revisa límites de abuso en login y endpoints costosos de IA cuando su implementación entre en alcance. No inventes valores de límites aún no decididos.
+- Server DTOs and validation must check types, UUIDs, enums, dates, units, quantities, and money, reject unexpected fields, and never rely on frontend validation.
+- Report SQL built with untrusted input, unparameterized queries, or unsafe dynamic operators.
+- Passwords must use bcrypt. Passwords, hashes, JWTs, Google tokens, authorization headers, `DATABASE_URL`, `JWT_SECRET`, `GOOGLE_CLIENT_SECRET`, and `GEMINI_API_KEY` must never appear in code, bundles, responses, or logs.
+- Every `VITE_*` variable is public. Report any secret exposed through that prefix or bundled into the frontend.
+- CORS is not a replacement for authentication or authorization.
+- Review abuse protection for login and expensive AI endpoints when those features enter scope.
 
-### Gemini e IA
+### Gemini and AI
 
-- Gemini solo recibe contexto mínimo que el usuario ya puede consultar. Reporta contexto de otro negocio, datos salariales/financieros no autorizados, objetos completos innecesarios o credenciales.
-- La IA no ejecuta SQL, accede directamente a PostgreSQL, calcula valores financieros oficiales ni persiste cambios.
-- Una propuesta de IA o voz requiere vista previa y confirmación explícita. La confirmación debe repetir autenticación, autorización, ownership, validación y reglas; no debe confiar en un payload propuesto anteriormente sin protegerlo contra manipulación o caducidad.
-- Las instrucciones del usuario o la salida del modelo no pueden alterar permisos, selección de herramientas ni reglas de negocio.
-- Los fallos del proveedor no deben bloquear compras, ventas, inventario u otras funciones principales.
+- Send Gemini only the minimum context the authorized user may access. Report cross-business context, unauthorized salary or financial data, unnecessary complete objects, and credentials.
+- AI must not execute SQL, access PostgreSQL directly, calculate official financial values, or persist changes.
+- AI or voice proposals require preview and explicit confirmation. Confirmation must repeat authentication, authorization, ownership, validation, and business rules.
+- User instructions and model output must not alter permissions, tool selection, or business rules.
+- Provider failures must not block purchases, sales, inventory, or other core operations.
 
-## Prioridad 2: bugs, reglas e integridad de datos
+## Priority 2: business rules and data integrity
 
-Contrasta cambios con los requisitos y reglas `BR-001` a `BR-030` de la Wiki. Revisa especialmente:
+Check changes against business rules `BR-001` through `BR-030` in the Wiki. In particular:
 
-- cantidades estrictamente mayores que cero y precios mayores o iguales a cero;
-- solo `kg ↔ g` y `L ↔ ml`; una unidad no se convierte a peso o volumen;
-- fechas reales de compras, ventas, gastos, conteos y mermas no pueden estar en el futuro;
-- receta `Draft → Active → Archived`; una receta activa requiere ingredientes válidos;
-- un producto preparado exige receta activa; un producto de reventa no;
-- registros archivados no se usan en nuevas operaciones y los historiales no se eliminan;
-- costo de receta = suma de ingredientes convertidos; costo unitario = costo total / unidades producidas;
-- utilidad unitaria = precio de venta - costo unitario; margen = `(precio - costo) / precio * 100`; trata explícitamente precio cero para evitar división por cero;
-- solo el Administrador acepta un nuevo costo de referencia; una compra excepcional no lo cambia;
-- compras pueden recibir precio total o unitario y calculan el faltante de forma coherente;
-- una venta exige turno abierto y un usuario tiene como máximo uno;
-- ventas guardan snapshots de precio y costo, sin recalcular historia;
-- una merma confirmada reduce stock y no puede superar el stock registrado;
-- conteos físicos conservan la diferencia y no inventan su causa;
-- alertas siguen `Pending → Reviewed → Resolved` y mantienen trazabilidad.
+- quantities must be greater than zero and prices must be zero or greater;
+- only `kg ↔ g` and `L ↔ ml` conversions are valid;
+- operational dates cannot be in the future;
+- recipe state follows `Draft → Active → Archived`, and an active recipe requires valid ingredients;
+- prepared products require an active recipe, while resale products do not;
+- archived records cannot be used in new operations and historical records are not deleted;
+- recipe cost is the sum of converted ingredient costs, and unit cost is total cost divided by produced units;
+- unit profit is sale price minus unit cost, and margin is `(price - cost) / price * 100`; handle a zero price explicitly;
+- only an Administrator accepts a new reference cost, and an exceptional purchase does not change it;
+- a sale requires an open shift and a user may have at most one open shift;
+- sales store price and cost snapshots and never recalculate history;
+- confirmed waste reduces stock and cannot exceed recorded stock;
+- physical counts preserve the difference without inventing its cause;
+- alerts follow `Pending → Reviewed → Resolved` and remain traceable.
 
-Revisa precisión y redondeo de dinero y cantidades según los tipos implementados. Reporta `number`/coma flotante cuando exista una ruta concreta a resultados financieros inconsistentes. No impongas una librería antes de que el proyecto decida su estrategia.
+Review monetary and quantity precision according to the implemented types. Report floating-point use only when there is a concrete path to inconsistent financial results.
 
-### Decisión pendiente sobre stock de ventas
+The Wiki allows a sale when recorded stock is zero (`BR-009`) but also proposes preventing negative stock in the database. Do not assume either behavior is correct. Require a documented and tested policy when a change depends on this contradiction.
 
-La Wiki permite una venta con stock registrado cero (`BR-009`), pero también propone impedir stock negativo en base de datos mientras la venta reduce stock. No marques automáticamente una de estas conductas como correcta. Si un cambio depende de esa contradicción, exige que la PR documente y pruebe una política coherente antes de aprobarlo.
+## Priority 3: atomicity, async behavior, and concurrency
 
-## Prioridad 3: atomicidad, asincronía y concurrencia
+- Multi-record purchases, production, sales, reconciliations, and corrections must run in a transaction and roll back every effect on failure.
+- Detect read-then-write races around open shifts, stock, accepted costs, state transitions, and reconciliations. Use transactions, constraints, or locks when appropriate.
+- Report unawaited promises, lost asynchronous errors, work started after the response, and callbacks that escape a transaction.
+- Retry mutations only when they are idempotent or protected against duplicates.
+- Do not keep database transactions open during Gemini or other slow external calls.
 
-- Compras, producción, ventas, conciliaciones y correcciones que modifican varios registros deben ejecutarse en una transacción. Ninguna falla puede dejar cabecera sin ítems, historial sin stock o solo una mitad de producción.
-- Verifica rollback de todos los efectos, incluida la creación de alertas que forme parte de la misma operación.
-- Detecta lecturas seguidas de escritura vulnerables a carreras: un único turno abierto, stock suficiente, aceptación de costos, transiciones de estado y conciliaciones necesitan garantías transaccionales y, cuando aplique, constraints o locks.
-- Reporta promesas no esperadas, `async` sin `await`, errores asíncronos perdidos, trabajo iniciado después de responder o callbacks que escapan de la transacción.
-- Los reintentos solo son seguros si la operación es idempotente o usa una clave/estado que evita duplicados. No sugieras reintentar mutaciones financieras a ciegas.
-- Evita llamadas externas largas dentro de transacciones de base de datos. Gemini no debe mantener locks ni participar en la transacción financiera.
+## Priority 4: architecture and boundaries
 
-## Prioridad 4: arquitectura y límites
+Use the Wiki as the target architecture while giving precedence to current executable evidence.
 
-Usa `docs/architecture.md` y la Wiki como arquitectura objetivo, pero da precedencia a decisiones actualizadas y evidencia ejecutable.
+- Presentation validates and translates HTTP; application coordinates use cases; domain owns deterministic rules; infrastructure adapts PostgreSQL and external services.
+- Domain code must not import NestJS, TypeORM, HTTP, Gemini, or infrastructure configuration.
+- Controllers must not contain calculations, complex transactions, or direct repository access.
+- Infrastructure must not decide authorization or duplicate business rules.
+- Modules must collaborate through explicit use cases or interfaces rather than reading each other's internal tables.
+- Frontend business UI logic belongs to features; shared components must remain domain-neutral.
+- Microservices, queues, WebSockets, uploads, OCR, payments, multiple branches, and offline support are outside the MVP unless explicitly approved.
 
-- Presentación/API valida y traduce HTTP; aplicación coordina casos de uso; dominio mantiene reglas deterministas; infraestructura adapta PostgreSQL y servicios externos.
-- El dominio no debe importar NestJS, TypeORM, HTTP, Gemini ni configuración de infraestructura.
-- Los controladores no deben contener cálculos, transacciones complejas ni acceso directo a repositorios.
-- Infraestructura no decide autorización ni duplica reglas de negocio.
-- Un módulo no debe consultar tablas internas de otro módulo para evitar su contrato; usa casos de uso o interfaces explícitas.
-- Frontend organiza lógica de negocio visual por feature. Componentes compartidos no deben adquirir reglas específicas de compras, ventas o inventario.
-- No aceptes microservicios, colas, WebSockets, uploads, OCR, pagos, múltiples sucursales u offline como si fueran parte del MVP; requieren una decisión y requisitos explícitos.
+## Priority 5: errors and observability
 
-La Wiki contiene un diagrama ADR que muestra dominio dependiendo de infraestructura, en conflicto con su texto. Hasta que se resuelva, aplica el principio explícito de dominio independiente y reporta imports concretos que lo rompan; no discutas solo la forma de las carpetas.
+- Expected failures should use stable codes such as `INSUFFICIENT_STOCK`, `SHIFT_REQUIRED`, `SHIFT_ALREADY_OPEN`, `FORBIDDEN`, `RESOURCE_NOT_FOUND`, `INVALID_UNIT_CONVERSION`, or `VALIDATION_ERROR` when applicable.
+- Centralize mapping from domain errors to HTTP responses.
+- Use `400`, `401`, `403`, `404`, and `409` correctly without revealing resources owned by another business.
+- Unexpected errors return a generic response and never expose stacks, SQL, internal names, credentials, or provider details.
+- Report empty catches, errors silently converted into success, discarded failures, and logs without useful context.
+- Never log passwords, hashes, tokens, secrets, authorization headers, sensitive prompts, or unnecessary financial data.
 
-## Prioridad 5: errores y observabilidad
+## Priority 6: performance
 
-- Errores de negocio esperados deben tener códigos estables como `INSUFFICIENT_STOCK`, `SHIFT_REQUIRED`, `SHIFT_ALREADY_OPEN`, `FORBIDDEN`, `RESOURCE_NOT_FOUND`, `INVALID_UNIT_CONVERSION` o `VALIDATION_ERROR` cuando correspondan.
-- El mapeo al contrato HTTP debe estar centralizado; evita respuestas distintas para la misma clase de error.
-- Usa correctamente `400`, `401`, `403`, `404` y `409` sin revelar si existe un recurso de otro negocio.
-- Los errores inesperados devuelven mensaje genérico; nunca stack trace, SQL, nombres internos, credenciales ni detalle de proveedor.
-- No aceptes `catch` vacío, errores convertidos silenciosamente en éxito, logs sin contexto o fallos descartados.
-- Los logs importantes deben incluir evento estable, nivel, timestamp e identificadores mínimos de operación. Deben permitir correlacionar el fallo sin copiar bodies u objetos completos.
-- No registres contraseñas, hashes, tokens, secretos, headers de autorización, prompts con datos sensibles ni información financiera innecesaria.
-- Un error de Gemini debe distinguirse de un error de negocio y mantener operativo el núcleo del producto.
+Report only demonstrated risks in changed paths: N+1 queries, repeated work, unfiltered full-table reads, unnecessary recalculation of historical costs, meaningfully slow sequential processing, and missing indexes for repeated filters or joins. Do not request caches, queues, or new infrastructure without measured need.
 
-## Prioridad 6: rendimiento
+## Priority 7: tests
 
-Reporta solo riesgos demostrables en la ruta modificada:
+- Require tests for authentication, permissions, ownership, conversions, costs, margins, stock, shifts, historical snapshots, AI or voice confirmation, and transactions.
+- A bug fix should include a regression test when practical.
+- Cover zero, negatives, incompatible units, future dates, archived entities, foreign businesses, incorrect roles, duplicate shifts, mid-transaction failure, and external-provider failure.
+- Database concurrency or constraint risks require integration coverage when unit tests cannot prove the behavior.
+- Do not confuse successful mocks with real integration coverage or visual snapshots with business-rule tests.
+- Reserve end-to-end tests for documented critical flows rather than every CRUD operation.
 
-- N+1 o consultas repetidas en listados y cálculos;
-- lectura de tablas completas sin filtro por negocio, fecha o paginación;
-- recálculo innecesario de costos históricos;
-- procesamiento secuencial evitable que cambie latencia de forma significativa;
-- índices ausentes cuando una consulta nueva filtra o relaciona repetidamente por `business_id`, claves foráneas o fechas.
+## Priority 8: relevant maintainability
 
-No pidas caché, colas o nueva infraestructura sin medición y necesidad real. El objetivo documentado para acciones normales es aproximadamente dos segundos, excluyendo IA y voz.
+- Report comments that narrate obvious code, are outdated, hide debt, or contain temporary instructions. Keep comments that explain non-obvious decisions or external requirements.
+- Report decorative emojis in source code, logs, and technical messages, but allow legitimate interface icons, user content, accessibility symbols, and functional markers.
+- Use `camelCase` for TypeScript and JSON, `PascalCase` for classes, components, and types, `UPPER_SNAKE_CASE` for constants, and `snake_case` for database columns.
+- Leave formatting-only concerns to Prettier and ESLint.
 
-## Prioridad 7: pruebas
-
-- Exige pruebas para cambios en autenticación, permisos, ownership, conversiones, costos, márgenes, stock, turnos, snapshots históricos, confirmación de IA/voz y transacciones.
-- Un bug corregido debe incluir una prueba que falle antes de la corrección cuando sea viable.
-- Incluye casos límite: cero, negativos, unidad incompatible, fecha futura, entidad archivada, negocio ajeno, rol incorrecto, doble turno, error a mitad de transacción y proveedor externo caído.
-- Para concurrencia o constraint, una prueba puramente unitaria no basta si el riesgo vive en PostgreSQL.
-- No confundas mocks exitosos con prueba de integración real ni snapshots visuales con validación de reglas.
-- No exijas E2E para cada CRUD; resérvalos para los flujos críticos documentados.
-
-## Prioridad 8: limpieza relevante
-
-- Reporta comentarios nuevos que narren código obvio, estén desactualizados, oculten deuda o contengan instrucciones temporales. Conserva comentarios que expliquen una decisión no evidente o requisito externo.
-- Reporta emojis decorativos agregados al código fuente, logs o mensajes técnicos. No marques iconos legítimos de interfaz, contenido de usuario, accesibilidad o símbolos funcionales.
-- Señala nombres que contradigan el dominio o convenciones comprobadas: TypeScript/JSON en `camelCase`, clases/componentes/tipos en `PascalCase`, constantes en `UPPER_SNAKE_CASE` y columnas en `snake_case`.
-- Evita observaciones puramente estilísticas que Prettier o ESLint deban resolver automáticamente.
-
-## Formato obligatorio de cada hallazgo
-
-Cada observación debe ser accionable y contener:
+## Required finding format
 
 ```text
-[Severidad: Crítica|Alta|Media|Baja] Título breve
-Archivo: ruta/al/archivo:línea
-Problema: conducta incorrecta demostrable.
-Por qué: explicación técnica ligada al código o a una regla identificada.
-Riesgo: consecuencia concreta para seguridad, datos, operación o mantenibilidad.
-Corrección: cambio específico y verificable recomendado.
+[Severity: Critical|High|Medium|Low] Short title
+File: path/to/file:line
+Problem: demonstrably incorrect behavior.
+Why: technical explanation tied to code or an identified rule.
+Risk: concrete security, data, operational, or maintainability consequence.
+Fix: specific and verifiable recommended change.
 ```
 
-Usa las severidades así:
+Use severity consistently: Critical for direct exploitation, broad data exposure, active secrets, or widespread corruption; High for authorization bypass, financial or inventory integrity, partial transactions, or probable critical failure; Medium for functional bugs, relevant edge cases, observability, or meaningful performance problems; Low for concrete and limited maintainability risks.
 
-- **Crítica:** explotación directa, fuga amplia de datos entre negocios, secreto activo expuesto o corrupción/pérdida generalizada de datos.
-- **Alta:** autorización evadible, integridad financiera/inventario comprometida, transacción parcial o fallo crítico probable.
-- **Media:** bug funcional, caso límite relevante, observabilidad insuficiente o degradación de rendimiento con impacto real.
-- **Baja:** mantenibilidad o limpieza con riesgo concreto y acotado.
+Include a diff line whenever GitHub permits it. If no real findings exist, say so clearly and mention only residual risks or checks that were not executed.
 
-Incluye archivo y línea del diff siempre que GitHub los permita. Si no hay hallazgos reales, indícalo con claridad y menciona solo riesgos residuales o verificaciones no ejecutadas; no inventes observaciones para completar la revisión.
+## Recommended automated verification
 
-## Verificaciones automáticas recomendadas
+When scripts exist, require formatting, lint, type-checking, tests, builds, and migrations for both applications. Add secret scanning, dependency checks, and static analysis only through tools the project actually adopts. Protect `main` with relevant checks and human review.
 
-Cuando existan scripts reales, recomienda checks obligatorios de lint, type-check, pruebas, build y migraciones para frontend y backend. Añade escaneo de secretos, dependencias y análisis estático solo mediante herramientas adoptadas y configuradas por el proyecto. La protección de `main` debe exigir los checks pertinentes y revisión humana.
-
-Kilo Code Review produce observaciones; no sustituye tests, validación del servidor, análisis automático, revisión humana ni reglas de protección de rama, y no debe afirmarse que bloquea un merge por sí solo.
+Kilo Code Review provides findings; it does not replace tests, server validation, automated analysis, human review, or branch protection, and it must not claim to block a merge by itself.
