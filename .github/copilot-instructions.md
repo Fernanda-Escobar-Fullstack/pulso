@@ -2,7 +2,7 @@
 
 ## Contexto verificable del proyecto
 
-Pulso está en fase de planificación. Al 14 de octubre de 2026, el repositorio solo contiene `README.md`; la arquitectura objetivo se documenta en la [Wiki](https://github.com/Fernanda-Escobar-Fullstack/pulso/wiki) y en `docs/architecture.md`. No presentes tecnologías planificadas como implementadas ni inventes versiones, comandos, módulos o garantías que el diff y el repositorio no demuestren.
+Pulso está iniciando su implementación. La base contiene un frontend React/Vite, una API NestJS conectada a PostgreSQL mediante TypeORM, validación de entorno, pruebas con Vitest y un workflow de calidad. La arquitectura completa se documenta en la [Wiki](https://github.com/Fernanda-Escobar-Fullstack/pulso/wiki) y en `docs/architecture.md`. No presentes módulos de negocio planificados como implementados ni inventes versiones, comandos o garantías que el repositorio no demuestre.
 
 El objetivo es una aplicación web para pequeños negocios de alimentos. El diseño previsto es un monorepositorio TypeScript con frontend React + Vite, backend NestJS por capas, REST, PostgreSQL/TypeORM, JWT y Google OAuth, Gemini mediante el backend y Web Speech API en el navegador. Todo ello sigue siendo arquitectura objetivo hasta que exista código verificable.
 

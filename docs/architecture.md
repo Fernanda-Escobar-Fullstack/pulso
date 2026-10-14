@@ -1,7 +1,7 @@
 # Arquitectura de Pulso
 
-> Estado del documento: arquitectura objetivo previa a la implementación.  
-> Verificado el 14 de octubre de 2026 contra `main` (`e5ce774`) y la Wiki (`e8b2c90`).
+> Estado del documento: base técnica implementada; funcionalidades de negocio pendientes.
+> Verificado el 14 de octubre de 2026 en `feature/project-foundation` y contra la Wiki (`e8b2c90`).
 
 ## 1. Alcance y fuentes de verdad
 
@@ -17,12 +17,14 @@ Si una fuente de mayor prioridad contradice a una inferior, la diferencia debe d
 
 ### Estado verificable actual
 
-El repositorio contiene únicamente `README.md`. No existen todavía `frontend/`, `backend/`, manifiestos de dependencias, migraciones, pruebas, workflows ni configuración de despliegue. Por tanto:
+El repositorio implementa la primera base ejecutable:
 
-- la arquitectura, el stack, los flujos y el modelo descritos aquí son **decisiones documentadas**, no implementación comprobada;
-- no hay versiones de frameworks o librerías verificables;
-- no pueden confirmarse autenticación, autorización, persistencia, transacciones, observabilidad, pruebas, CI/CD ni despliegues;
-- los comandos de instalación, ejecución, lint, pruebas y compilación aún no están definidos en el repositorio.
+- `frontend/` contiene una aplicación React/Vite mínima, una prueba de renderizado y configuración de ESLint, Prettier y Vitest;
+- `backend/` contiene una API NestJS con `/api/v1/health`, configuración validada, CORS, validación global y conexión PostgreSQL mediante TypeORM;
+- `.github/workflows/ci.yml` ejecuta formato, lint, pruebas y build para ambas aplicaciones;
+- los lockfiles permiten instalaciones reproducibles con npm y Node.js 24 LTS.
+
+Todavía no existen módulos de negocio, entidades, migraciones, autenticación, autorización, IA, observabilidad de producción, pruebas E2E ni despliegues. Esas secciones continúan describiendo arquitectura objetivo.
 
 ## 2. Visión general
 
@@ -41,24 +43,26 @@ El backend es el límite de confianza: autentica, autoriza, aplica aislamiento p
 
 ## 3. Stack tecnológico documentado
 
-| Área | Decisión objetivo | Estado verificable |
-| --- | --- | --- |
-| Lenguaje | TypeScript en frontend y backend | Planificado; sin versión |
-| Frontend | React + Vite | Planificado; sin dependencias aún |
-| UI | Tailwind CSS | Planificado |
-| Backend | NestJS | Planificado |
-| API | REST sobre HTTPS, JSON, `/api/v1` | Planificado |
-| Persistencia | PostgreSQL mediante TypeORM | Planificado |
-| Validación | `class-validator` + `class-transformer` | Planificado |
-| Autenticación | JWT, email/contraseña y Google OAuth | Planificado |
-| Hash de contraseñas | bcrypt | Planificado |
-| IA | Gemini API, siempre mediada por el backend | Planificado |
-| Voz | Web Speech API en el navegador | Planificado |
-| Pruebas | Jest y herramientas NestJS; Cypress para E2E | Planificado |
-| CI/CD | GitHub Actions | Planificado; sin workflows |
-| Hosting | Cloudflare Pages, hosting Node.js y Supabase PostgreSQL | Objetivo; proveedor de backend sin elegir |
+| Área                | Decisión objetivo                                       | Estado verificable                                      |
+| ------------------- | ------------------------------------------------------- | ------------------------------------------------------- |
+| Runtime y gestor    | Node.js + npm                                           | Node.js 24 LTS; npm 11                                  |
+| Lenguaje            | TypeScript en frontend y backend                        | 6.0.3                                                   |
+| Frontend            | React + Vite                                            | React 19.3.0; Vite 8.3.4                                |
+| UI                  | Tailwind CSS                                            | Planificado                                             |
+| Backend             | NestJS                                                  | 12.1.3                                                  |
+| API                 | REST, JSON, `/api/v1`                                   | Base HTTP implementada; HTTPS corresponde al despliegue |
+| Persistencia        | PostgreSQL mediante TypeORM                             | TypeORM 1.1.2 y `pg` 8.23.1; sin entidades aún          |
+| Validación          | `class-validator` + `class-transformer`                 | Instalados; `ValidationPipe` global configurado         |
+| Autenticación       | JWT, email/contraseña y Google OAuth                    | Planificado                                             |
+| Hash de contraseñas | bcrypt                                                  | Planificado                                             |
+| IA                  | Gemini API, siempre mediada por el backend              | Planificado                                             |
+| Voz                 | Web Speech API en el navegador                          | Planificado                                             |
+| Pruebas             | Vitest + Testing Library; Cypress previsto para E2E     | Unitarias base implementadas; E2E pendiente             |
+| Calidad             | ESLint + Prettier                                       | Configurados en ambas aplicaciones                      |
+| CI/CD               | GitHub Actions                                          | Workflow de calidad implementado; despliegue pendiente  |
+| Hosting             | Cloudflare Pages, hosting Node.js y Supabase PostgreSQL | Objetivo; proveedor de backend sin elegir               |
 
-No se deben fijar versiones en documentación o revisión hasta que existan manifiestos y lockfiles que las demuestren.
+Las versiones verificadas proceden de los manifiestos y lockfiles de cada aplicación.
 
 ## 4. Estilo arquitectónico y dependencias
 
@@ -76,12 +80,12 @@ La organización objetivo agrupa funcionalidad de dominio en `frontend/src/featu
 
 Las capas objetivo son:
 
-| Capa | Responsabilidad | No debe hacer |
-| --- | --- | --- |
-| Presentación / API | Rutas, DTOs, autenticación de solicitud, serialización y códigos HTTP | Ejecutar cálculos de negocio o consultar repositorios directamente |
-| Aplicación | Coordinar casos de uso, permisos, transacciones y puertos | Depender de detalles del framework en la lógica de negocio |
-| Dominio | Reglas, estados, cálculos deterministas y errores de negocio | Importar TypeORM, NestJS, HTTP, Gemini o configuración de infraestructura |
-| Infraestructura | Repositorios TypeORM, PostgreSQL, proveedores externos y adaptadores | Decidir permisos o duplicar reglas del dominio |
+| Capa               | Responsabilidad                                                       | No debe hacer                                                             |
+| ------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Presentación / API | Rutas, DTOs, autenticación de solicitud, serialización y códigos HTTP | Ejecutar cálculos de negocio o consultar repositorios directamente        |
+| Aplicación         | Coordinar casos de uso, permisos, transacciones y puertos             | Depender de detalles del framework en la lógica de negocio                |
+| Dominio            | Reglas, estados, cálculos deterministas y errores de negocio          | Importar TypeORM, NestJS, HTTP, Gemini o configuración de infraestructura |
+| Infraestructura    | Repositorios TypeORM, PostgreSQL, proveedores externos y adaptadores  | Decidir permisos o duplicar reglas del dominio                            |
 
 La dependencia normativa se interpreta así:
 
@@ -122,27 +126,27 @@ pulso/
     └── workflows/
 ```
 
-Esta estructura todavía no está implementada. Cada módulo NestJS deberá mantener juntos su controlador, servicio, DTOs y código de dominio relacionado, sin convertir `common/` en un contenedor de lógica sin propietario.
+Las carpetas raíz `frontend/`, `backend/`, `docs/` y `.github/workflows/` ya están implementadas. Las subdivisiones por feature y módulos se crearán únicamente al implementar cada capacidad. Cada módulo NestJS deberá mantener juntos su controlador, servicio, DTOs y código de dominio relacionado, sin convertir `common/` en un contenedor de lógica sin propietario.
 
 ## 5. Módulos funcionales y límites
 
 El diseño objetivo contiene los siguientes módulos:
 
-| Módulo | Responsabilidad principal |
-| --- | --- |
-| Auth y usuarios | Registro, login, Google OAuth, JWT, estado de usuario y roles |
-| Negocios | Propiedad del tenant y aislamiento de todos los datos operativos |
-| Ingredientes | Unidades, conversiones compatibles, costo de referencia y stock |
-| Recetas | Composición, estados y costo calculado |
-| Productos | Preparados o de reventa, precio, costo, utilidad y margen |
+| Módulo                | Responsabilidad principal                                               |
+| --------------------- | ----------------------------------------------------------------------- |
+| Auth y usuarios       | Registro, login, Google OAuth, JWT, estado de usuario y roles           |
+| Negocios              | Propiedad del tenant y aislamiento de todos los datos operativos        |
+| Ingredientes          | Unidades, conversiones compatibles, costo de referencia y stock         |
+| Recetas               | Composición, estados y costo calculado                                  |
+| Productos             | Preparados o de reventa, precio, costo, utilidad y margen               |
 | Proveedores y compras | Compras, ítems, historial, correcciones y actualización de stock/costos |
-| Producción | Consumo atómico de ingredientes y creación de stock preparado |
-| Turnos y ventas | Apertura/cierre, ventas, ítems, snapshots históricos y stock |
-| Gastos | Monto, categoría, fecha y control de información salarial |
-| Inventario y merma | Conteos físicos, conciliación, discrepancias y reducciones confirmadas |
-| Alertas | Cambios de costo, stock mínimo e inconsistencias de inventario |
-| Resultados | Ingresos, gastos y resultados autorizados calculados por backend |
-| IA | Preguntas y propuestas usando únicamente contexto autorizado |
+| Producción            | Consumo atómico de ingredientes y creación de stock preparado           |
+| Turnos y ventas       | Apertura/cierre, ventas, ítems, snapshots históricos y stock            |
+| Gastos                | Monto, categoría, fecha y control de información salarial               |
+| Inventario y merma    | Conteos físicos, conciliación, discrepancias y reducciones confirmadas  |
+| Alertas               | Cambios de costo, stock mínimo e inconsistencias de inventario          |
+| Resultados            | Ingresos, gastos y resultados autorizados calculados por backend        |
+| IA                    | Preguntas y propuestas usando únicamente contexto autorizado            |
 
 Los módulos pueden colaborar mediante casos de uso y contratos explícitos. No deben leer tablas ajenas ni replicar cálculos para evitar sus límites públicos.
 
@@ -305,15 +309,15 @@ La estrategia planificada prioriza riesgos sobre una cifra de cobertura:
 
 Toda prueba multitenant crítica debe usar al menos dos negocios y demostrar que no se puede leer, modificar ni inferir información del otro. Los fallos de Gemini y voz deben probar degradación segura.
 
-Jest y Cypress están documentados, pero aún no están configurados. No se puede afirmar que una prueba, lint o build pasa hasta ejecutar el comando real del repositorio.
+La implementación base usa Vitest en frontend y backend, junto con Testing Library para React. Cypress permanece planificado para los flujos E2E. No se puede afirmar que una prueba, lint o build pasa sin ejecutar el comando real del repositorio.
 
 ## 15. Despliegue y CI/CD objetivo
 
 El objetivo es desplegar el frontend en Cloudflare Pages, la API NestJS en un proveedor Node.js aún no elegido y PostgreSQL en Supabase. Desarrollo, pruebas y producción usan configuración y datos separados.
 
-GitHub Actions deberá instalar dependencias de forma reproducible, ejecutar lint, pruebas y build de ambas aplicaciones, y permitir despliegue solo después de esos checks. Las protecciones de rama pueden exigir esos checks; una revisión de Copilot por sí sola no bloquea un merge.
+GitHub Actions instala dependencias con `npm ci` y ejecuta formato, lint, pruebas y build de ambas aplicaciones en cada pull request dirigido a `main` y en cada push a `main`. Las protecciones de rama pueden exigir esos checks; una revisión de Copilot por sí sola no bloquea un merge.
 
-No existen workflows ni manifiestos que permitan definir comandos. También siguen pendientes los controles automáticos de secretos, dependencias y migraciones.
+Siguen pendientes el despliegue y los controles automáticos de secretos, dependencias y migraciones.
 
 ## 16. Decisiones y exclusiones del MVP
 
@@ -327,7 +331,9 @@ Añadir cualquiera de estas capacidades requiere actualizar requisitos, riesgos,
 
 ### 17.1 Documentación frente a implementación
 
-La Wiki describe un sistema completo, mientras que el repositorio aún no contiene código. No es una desviación de implementación, sino una arquitectura objetivo todavía no verificada. Los revisores deben evitar frases como “el sistema usa” cuando solo existe una decisión de diseño.
+La Wiki describe el sistema completo, mientras que el repositorio implementa solo la fundación. Los revisores deben distinguir la base verificada de los módulos de negocio todavía planificados.
+
+La Wiki selecciona Jest como test runner; la base generada con las versiones actuales de Vite y NestJS usa Vitest para reducir configuración duplicada. Esta diferencia debe formalizarse en la Wiki si el equipo mantiene Vitest después de la primera revisión.
 
 ### 17.2 Dirección de dependencias
 
@@ -339,7 +345,6 @@ La Wiki describe un sistema completo, mientras que el repositorio aún no contie
 
 ### 17.4 Detalles aún no definidos
 
-- versiones exactas y gestor de paquetes;
 - proveedor y configuración del backend;
 - política de JWT, refresh/revocación y almacenamiento en cliente;
 - límites concretos de rate limiting;

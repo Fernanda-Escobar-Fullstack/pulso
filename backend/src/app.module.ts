@@ -1,0 +1,29 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
+import { AppController } from './app.controller.js';
+import { AppService } from './app.service.js';
+import { validateEnvironment } from './config/environment.js';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      cache: true,
+      isGlobal: true,
+      validate: validateEnvironment,
+    }),
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        url: configService.getOrThrow<string>('DATABASE_URL'),
+        autoLoadEntities: true,
+        synchronize: false,
+      }),
+    }),
+  ],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}

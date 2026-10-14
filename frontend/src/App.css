@@ -1,0 +1,38 @@
+.page-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.welcome-card {
+  width: min(34rem, 100%);
+  padding: 3rem;
+  border: 1px solid #dedede;
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 1rem 3rem rgb(23 23 23 / 8%);
+}
+
+.eyebrow {
+  margin: 0 0 0.75rem;
+  color: #526453;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.welcome-card h1 {
+  margin: 0;
+  color: #1c3321;
+  font-size: clamp(2.5rem, 9vw, 4rem);
+  line-height: 1;
+}
+
+.summary {
+  margin: 1.25rem 0 0;
+  color: #424942;
+  line-height: 1.6;
+}
